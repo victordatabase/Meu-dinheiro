@@ -1,0 +1,22 @@
+# Sobe um MySQL local só para você testar a API na sua máquina,
+# antes de publicar de verdade. Requer Docker Desktop instalado E aberto.
+#
+# Uso:
+#   docker compose up -d
+#   (o schema.sql roda sozinho na primeira vez que o banco é criado)
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: escolha-uma-senha
+      MYSQL_DATABASE: meudinheiro
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  mysql-data:
