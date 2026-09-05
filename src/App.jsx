@@ -1201,6 +1201,10 @@ function AuthScreen({ onLogin, onSignup, error, clearError }) {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="ex: victor"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="username"
+              spellCheck={false}
               style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", color: "var(--ink)", fontSize: 14, outline: "none" }}
             />
           </div>
@@ -1213,6 +1217,10 @@ function AuthScreen({ onLogin, onSignup, error, clearError }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              spellCheck={false}
               style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", color: "var(--ink)", fontSize: 14, outline: "none" }}
             />
           </div>
@@ -1227,6 +1235,10 @@ function AuthScreen({ onLogin, onSignup, error, clearError }) {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="••••••••"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="new-password"
+                  spellCheck={false}
                   style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", color: "var(--ink)", fontSize: 14, outline: "none" }}
                 />
               </div>
