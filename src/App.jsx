@@ -144,6 +144,7 @@ export default function FinanceApp() {
   const [selectedMonth, setSelectedMonth] = useState(monthKey(todayStr()));
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [printData, setPrintData] = useState(null);
+  const [exportPicker, setExportPicker] = useState(null); // { type: 'excel' | 'print' }
   const bottomRef = useRef(null);
 
   // Carrega a lista de contas (usuários) assim que o app abre
@@ -331,6 +332,28 @@ export default function FinanceApp() {
     setTimeout(() => window.print(), 150);
   }
 
+  function openExportPicker(type) {
+    setExportPicker({ type });
+  }
+
+  function confirmExport(type, selectedGroupIds) {
+    const list = entries.filter((e) => monthKey(e.date) === selectedMonth && selectedGroupIds.has(e.groupId));
+    const selectedGroups = groups.filter((g) => selectedGroupIds.has(g.id));
+    const allSelected = selectedGroups.length === groups.length;
+    const label = allSelected
+      ? "Extrato geral"
+      : selectedGroups.length === 1
+      ? selectedGroups[0].name
+      : selectedGroups.map((g) => g.name).join(", ");
+    if (type === "excel") {
+      const filename = allSelected ? `extrato-geral-${selectedMonth}` : `${selectedGroups.map((g) => g.name).join("-")}-${selectedMonth}`;
+      exportExcel(list, filename);
+    } else {
+      handlePrint(list, `${label} — ${fmtMonthLabel(selectedMonth)}`);
+    }
+    setExportPicker(null);
+  }
+
   function handleSignup(username, password, confirm) {
     const key = username.trim().toLowerCase().replace(/\s+/g, "");
     if (!key || !password) {
@@ -440,7 +463,7 @@ export default function FinanceApp() {
             {view === "dashboard" && (
               <div className="flex items-center gap-2">
                 <LayoutDashboard size={18} style={{ color: "var(--amber)" }} />
-                <span className="num" style={{ fontSize: 16, fontWeight: 600 }}>Dashboard</span>
+                <span className="num hidden sm:inline" style={{ fontSize: 16, fontWeight: 600 }}>Dashboard</span>
               </div>
             )}
           </div>
@@ -490,11 +513,7 @@ export default function FinanceApp() {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 title="Exportar planilha"
-                onClick={() => {
-                  const list = view === "chat" ? entriesByGroupMonth : monthEntriesAll;
-                  const name = view === "chat" ? `${activeGroup?.name || "grupo"}-${selectedMonth}` : `extrato-geral-${selectedMonth}`;
-                  exportExcel(list, name);
-                }}
+                onClick={() => openExportPicker("excel")}
                 className="flex items-center justify-center"
                 style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(255,255,255,0.1)", color: "#fff" }}
               >
@@ -502,11 +521,7 @@ export default function FinanceApp() {
               </button>
               <button
                 title="Imprimir / gerar PDF"
-                onClick={() => {
-                  const list = view === "chat" ? entriesByGroupMonth : monthEntriesAll;
-                  const title = view === "chat" ? `${activeGroup?.name || ""} — ${fmtMonthLabel(selectedMonth)}` : `Extrato geral — ${fmtMonthLabel(selectedMonth)}`;
-                  handlePrint(list, title);
-                }}
+                onClick={() => openExportPicker("print")}
                 className="flex items-center justify-center"
                 style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(255,255,255,0.1)", color: "#fff" }}
               >
@@ -624,6 +639,15 @@ export default function FinanceApp() {
       </div>
 
       {showNewGroup && <NewGroupModal onClose={() => setShowNewGroup(false)} onCreate={addGroup} />}
+
+      {exportPicker && (
+        <ExportGroupModal
+          groups={groups}
+          defaultSelectedId={view === "chat" ? activeGroupId : null}
+          onCancel={() => setExportPicker(null)}
+          onConfirm={(selectedIds) => confirmExport(exportPicker.type, selectedIds)}
+        />
+      )}
 
       {/* Área de impressão (oculta na tela, visível ao imprimir) */}
       <div className="print-area">
@@ -1240,6 +1264,79 @@ function MessageCircleIcon() {
 }
 
 /* ---------------------------------- Modais ---------------------------------- */
+
+function ExportGroupModal({ groups, defaultSelectedId, onCancel, onConfirm }) {
+  const [selected, setSelected] = useState(() => new Set(defaultSelectedId ? [defaultSelectedId] : groups.map((g) => g.id)));
+
+  function toggle(id) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.6)", zIndex: 50 }}>
+      <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: 22, width: 360, maxWidth: "100%" }}>
+        <div className="flex items-center justify-between mb-3">
+          <span className="num" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>Quais grupos exportar?</span>
+          <button onClick={onCancel}><X size={18} color="var(--ink-soft)" /></button>
+        </div>
+
+        <div className="flex gap-3 mb-3">
+          <button type="button" onClick={() => setSelected(new Set(groups.map((g) => g.id)))} style={{ fontSize: 12, color: "var(--income)" }}>
+            Selecionar todos
+          </button>
+          <button type="button" onClick={() => setSelected(new Set())} style={{ fontSize: 12, color: "var(--ink-soft)" }}>
+            Limpar seleção
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-1.5" style={{ maxHeight: 260, overflowY: "auto" }}>
+          {groups.map((g) => {
+            const Icon = (GROUP_ICONS.find((i) => i.id === g.icon) || GROUP_ICONS[0]).Icon;
+            const checked = selected.has(g.id);
+            return (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => toggle(g.id)}
+                className="flex items-center gap-3 text-left"
+                style={{ padding: "9px 10px", borderRadius: 10, background: checked ? "var(--surface-2)" : "transparent" }}
+              >
+                <span
+                  className="flex items-center justify-center shrink-0"
+                  style={{ width: 20, height: 20, borderRadius: 6, border: checked ? "none" : "1px solid var(--border)", background: checked ? "var(--income-gradient)" : "transparent" }}
+                >
+                  {checked && <Check size={13} color="#fff" />}
+                </span>
+                <span className="flex items-center justify-center shrink-0" style={{ width: 26, height: 26, borderRadius: 7, background: g.color }}>
+                  <Icon size={13} color="#fff" />
+                </span>
+                <span style={{ fontSize: 14, color: "var(--ink)" }}>{g.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          disabled={selected.size === 0}
+          onClick={() => onConfirm(selected)}
+          className="num"
+          style={
+            selected.size > 0
+              ? { width: "100%", marginTop: 18, backgroundImage: "var(--income-gradient)", color: "#fff", padding: "11px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, border: "none" }
+              : { width: "100%", marginTop: 18, background: "var(--surface-2)", color: "var(--ink-soft)", padding: "11px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, border: "none" }
+          }
+        >
+          Exportar {selected.size > 0 ? `(${selected.size} grupo${selected.size > 1 ? "s" : ""})` : ""}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function NewGroupModal({ onClose, onCreate }) {
   const [name, setName] = useState("");
