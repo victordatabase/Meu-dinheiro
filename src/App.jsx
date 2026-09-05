@@ -412,7 +412,7 @@ export default function FinanceApp() {
           style={{ backgroundImage: "var(--header-gradient)", color: "#fff", borderBottom: "1px solid var(--border)" }}
         >
           {view !== "groups" && (
-            <button className="md:hidden" onClick={() => setView("groups")} style={{ color: "#fff" }}>
+            <button onClick={() => setView("groups")} title="Voltar" style={{ color: "#fff" }}>
               <ArrowLeft size={20} />
             </button>
           )}
