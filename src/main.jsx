@@ -5,9 +5,14 @@ import { registerSW } from "virtual:pwa-register";
 
 async function bootstrap() {
   // Se VITE_API_URL estiver configurada, os dados vão para a API/MySQL.
-  // Caso contrário, usa o localStorage do navegador (comportamento padrão).
+  // VITE_API_BACKEND escolhe qual API usar: "node" (padrão, Railway) ou "php" (hospedagem cPanel/PHP).
+  // Sem VITE_API_URL, usa o localStorage do navegador (comportamento padrão).
   if (import.meta.env.VITE_API_URL) {
-    await import("./apiStorage.js");
+    if (import.meta.env.VITE_API_BACKEND === "php") {
+      await import("./apiStoragePhp.js");
+    } else {
+      await import("./apiStorage.js");
+    }
   } else {
     await import("./storageShim.js");
   }
