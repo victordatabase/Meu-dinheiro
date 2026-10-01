@@ -30,11 +30,12 @@ jobs:
       - name: Instalar dependências
         run: npm install
 
-      - name: Build
+       - name: Build
         run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_API_SECRET: ${{ vars.VITE_API_SECRET }}
+          VITE_API_BACKEND: ${{ vars.VITE_API_BACKEND }}
 
       - name: Configurar Pages
         uses: actions/configure-pages@v4
